@@ -1,13 +1,18 @@
 const express = require('express');
 const router = express.Router();
 const pedidoController = require('../controllers/pedidoController');
+const { verifyToken } = require('../middleware/authJwt');
 
-router.post('/', pedidoController.create);
+// --- ROTAS PÚBLICAS ---
 router.get('/prontos', pedidoController.findProntos);
-router.get('/', pedidoController.findAll);
-router.get('/:id', pedidoController.findOne);
-router.patch('/:id/status', pedidoController.updateStatus);
 router.post('/:pedidoId/inscrever', pedidoController.inscrever);
-router.delete('/:id', pedidoController.delete);
+router.get('/', pedidoController.findAll); // Listar todos os pedidos
+router.get('/:id', pedidoController.findOne); // Detalhes de um pedido
+
+// --- ROTAS PROTEGIDAS ---
+router.post('/', [verifyToken], pedidoController.create);
+router.patch('/:id/status', [verifyToken], pedidoController.updateStatus);
+router.delete('/:id', [verifyToken], pedidoController.delete);
 
 module.exports = router;
+

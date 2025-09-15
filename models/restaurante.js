@@ -5,20 +5,26 @@ const {
 module.exports = (sequelize, DataTypes) => {
   class Restaurante extends Model {
     static associate(models) {
-      Restaurante.hasMany(models.Pedido, {
-        foreignKey: 'restauranteId',
-        as: 'pedidos'
-      });
+      // define association here
+      this.hasMany(models.Pedido, { foreignKey: 'restauranteId', as: 'pedidos' });
     }
   }
   Restaurante.init({
     nome: DataTypes.STRING,
-    cnpj: DataTypes.STRING,
+    cnpj: {
+      type: DataTypes.STRING,
+      unique: true
+    },
     localizacao: DataTypes.STRING,
-    caminhoCardapioPdf: DataTypes.STRING
+    caminhoCardapioPdf: DataTypes.STRING,
+    password: {
+      type: DataTypes.STRING,
+      allowNull: false
+    }
   }, {
     sequelize,
     modelName: 'Restaurante',
   });
   return Restaurante;
 };
+
