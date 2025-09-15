@@ -1,5 +1,7 @@
 const db = require('../../models');
 const Restaurante = db.Restaurante;
+const Pedido = db.Pedido; 
+const { Op } = require('sequelize');
 
 // Criar um novo restaurante
 exports.create = async (req, res) => {
@@ -71,6 +73,49 @@ exports.delete = async (req, res) => {
     }
   } catch (error) {
     res.status(500).send({ message: 'Erro ao deletar o restaurante.', error: error.message });
+  }
+};
+
+// Calcular tempo médio de preparo
+exports.getTempoMedio = async (req, res) => {
+  try {
+    const restauranteId = req.params.id;
+    const ultimosPedidos = await Pedido.findAll({
+      where: {
+        restauranteId: restauranteId,
+        status: 'PRONTO',
+        dataHoraCriacao: { [Op.ne]: null },
+        dataHoraPronto: { [Op.ne]: null }
+      },
+      order: [['dataHoraPronto', 'DESC']],
+      limit: 10
+    });
+
+    // Filtra pedidos com datas válidas (dataHoraPronto >= dataHoraCriacao)
+    const pedidosValidos = ultimosPedidos.filter(pedido => {
+      const inicio = new Date(pedido.dataHoraCriacao).getTime();
+      const fim = new Date(pedido.dataHoraPronto).getTime();
+      return fim >= inicio;
+    });
+
+    if (pedidosValidos.length === 0) {
+      return res.status(200).send({ tempoMedioMinutos: 0, message: 'Não há pedidos válidos para calcular o tempo médio.' });
+    }
+
+    const totalSegundos = pedidosValidos.reduce((acc, pedido) => {
+      const inicio = new Date(pedido.dataHoraCriacao).getTime();
+      const fim = new Date(pedido.dataHoraPronto).getTime();
+      const diferenca = (fim - inicio) / 1000; 
+      return acc + diferenca;
+    }, 0);
+
+    const tempoMedioSegundos = totalSegundos / pedidosValidos.length;
+    const tempoMedioMinutos = Math.round(tempoMedioSegundos / 60);
+
+    res.status(200).send({ tempoMedioMinutos });
+
+  } catch (error) {
+    res.status(500).send({ message: 'Erro ao calcular o tempo médio.', error: error.message });
   }
 };
 
