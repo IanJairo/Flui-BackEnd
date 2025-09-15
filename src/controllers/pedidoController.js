@@ -4,7 +4,6 @@ const Restaurante = db.Restaurante;
 const Cliente = db.Cliente;
 const Inscricao = db.Inscricao;
 
-// Lógica para inscrever um cliente em um pedido
 exports.inscrever = async (req, res) => {
   try {
     const { pedidoId } = req.params;
@@ -37,7 +36,6 @@ exports.inscrever = async (req, res) => {
 };
 
 
-// Criar um novo pedido
 exports.create = async (req, res) => {
   try {
     const { numeroComanda, restauranteId } = req.body;
@@ -45,11 +43,10 @@ exports.create = async (req, res) => {
       return res.status(400).send({ message: 'O número da comanda e o ID do restaurante são obrigatórios.' });
     }
 
-    // Define valores padrão no momento da criação
     const novoPedido = await Pedido.create({
       numeroComanda,
       restauranteId,
-      status: 'PREPARANDO',
+  status: 'PREPARANDO',
       dataHoraCriacao: new Date()
     });
 
@@ -59,16 +56,15 @@ exports.create = async (req, res) => {
   }
 };
 
-// Listar todos os pedidos (incluindo dados do restaurante)
 exports.findAll = async (req, res) => {
   try {
     const pedidos = await Pedido.findAll({
       include: [{
         model: Restaurante,
-        as: 'restaurante', 
-        attributes: ['id', 'nome'] 
+  as: 'restaurante',
+  attributes: ['id', 'nome']
       }],
-      order: [['dataHoraCriacao', 'DESC']] 
+  order: [['dataHoraCriacao', 'DESC']]
     });
     res.status(200).send(pedidos);
   } catch (error) {
@@ -76,7 +72,6 @@ exports.findAll = async (req, res) => {
   }
 };
 
-//Listar últimos 7 pedidos prontos
 exports.findProntos = async (req, res) => {
   try {
     const pedidosProntos = await Pedido.findAll({
@@ -88,8 +83,8 @@ exports.findProntos = async (req, res) => {
         as: 'restaurante',
         attributes: ['id', 'nome']
       }],
-      order: [['dataHoraPronto', 'DESC']], 
-      limit: 7 
+  order: [['dataHoraPronto', 'DESC']],
+  limit: 7
     });
     res.status(200).send(pedidosProntos);
   } catch (error) {
@@ -98,14 +93,13 @@ exports.findProntos = async (req, res) => {
 };
 
 
-// Buscar um pedido por ID
 exports.findOne = async (req, res) => {
   try {
     const id = req.params.id;
     const pedido = await Pedido.findByPk(id, {
       include: [{ 
         model: Restaurante, 
-        as: 'restaurante'
+  as: 'restaurante'
       }]
     });
     if (pedido) {
@@ -118,11 +112,10 @@ exports.findOne = async (req, res) => {
   }
 };
 
-// Atualizar o status de um pedido (função principal do PinPad)
 exports.updateStatus = async (req, res) => {
   try {
     const id = req.params.id;
-    const { status } = req.body; // Espera receber um novo status, ex: "PRONTO"
+    const { status } = req.body;
 
     if (!status) {
         return res.status(400).send({ message: 'O novo status é obrigatório.' });
@@ -139,6 +132,25 @@ exports.updateStatus = async (req, res) => {
     });
 
     if (num == 1) {
+      if (status.toUpperCase() === 'PRONTO') {
+        const inscricoes = await Inscricao.findAll({
+          where: {
+            pedidoId: id,
+            status: 'PENDENTE'
+          },
+          include: [Cliente]
+        });
+
+        for (const inscricao of inscricoes) {
+          const emailCliente = inscricao.Cliente.email;
+          
+          console.log(`[NOTIFICAÇÃO]: Enviando e-mail para ${emailCliente} sobre o Pedido ID ${id} que está pronto!`);
+
+          await inscricao.update({ status: 'ENVIADA' });
+          await inscricao.update({ status: 'ENVIADA' });
+        }
+      }
+      
       res.send({ message: 'Status do pedido atualizado com sucesso.' });
     } else {
       res.send({ message: `Não foi possível atualizar o pedido com ID=${id}.` });
@@ -149,7 +161,6 @@ exports.updateStatus = async (req, res) => {
 };
 
 
-// Deletar um pedido por ID
 exports.delete = async (req, res) => {
   try {
     const id = req.params.id;
