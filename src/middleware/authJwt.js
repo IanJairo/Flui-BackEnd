@@ -12,7 +12,10 @@ const verifyToken = (req, res, next) => {
     token = token.slice(7, token.length);
   }
 
-  jwt.verify(token, process.env.JWT_SECRET, (err, decoded) => {
+  if (!config.jwtSecret) {
+    return res.status(500).send({ message: 'JWT secret is not configured on the server.' });
+  }
+  jwt.verify(token, config.jwtSecret, (err, decoded) => {
     if (err) {
       return res.status(401).send({ message: 'Não autorizado!' });
     }
