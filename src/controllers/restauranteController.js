@@ -91,18 +91,25 @@ exports.getTempoMedio = async (req, res) => {
       limit: 10
     });
 
-    if (ultimosPedidos.length === 0) {
-      return res.status(200).send({ tempoMedioMinutos: 0, message: 'Não há pedidos concluídos para calcular o tempo médio.' });
+    // Filtra pedidos com datas válidas (dataHoraPronto >= dataHoraCriacao)
+    const pedidosValidos = ultimosPedidos.filter(pedido => {
+      const inicio = new Date(pedido.dataHoraCriacao).getTime();
+      const fim = new Date(pedido.dataHoraPronto).getTime();
+      return fim >= inicio;
+    });
+
+    if (pedidosValidos.length === 0) {
+      return res.status(200).send({ tempoMedioMinutos: 0, message: 'Não há pedidos válidos para calcular o tempo médio.' });
     }
 
-    const totalSegundos = ultimosPedidos.reduce((acc, pedido) => {
+    const totalSegundos = pedidosValidos.reduce((acc, pedido) => {
       const inicio = new Date(pedido.dataHoraCriacao).getTime();
       const fim = new Date(pedido.dataHoraPronto).getTime();
       const diferenca = (fim - inicio) / 1000; 
       return acc + diferenca;
     }, 0);
 
-    const tempoMedioSegundos = totalSegundos / ultimosPedidos.length;
+    const tempoMedioSegundos = totalSegundos / pedidosValidos.length;
     const tempoMedioMinutos = Math.round(tempoMedioSegundos / 60);
 
     res.status(200).send({ tempoMedioMinutos });
