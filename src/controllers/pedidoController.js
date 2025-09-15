@@ -1,8 +1,41 @@
 const db = require('../../models');
 const Pedido = db.Pedido;
 const Restaurante = db.Restaurante;
+const Cliente = db.Cliente;
+const Inscricao = db.Inscricao;
 
-// Criar um novo pedido
+exports.inscrever = async (req, res) => {
+  try {
+    const { pedidoId } = req.params;
+    const { email } = req.body;
+
+    if (!email) {
+      return res.status(400).send({ message: 'O e-mail é obrigatório para a inscrição.' });
+    }
+
+    const pedido = await Pedido.findByPk(pedidoId);
+    if (!pedido) {
+      return res.status(404).send({ message: 'Pedido não encontrado.' });
+    }
+
+    const [cliente] = await Cliente.findOrCreate({
+      where: { email: email }
+    });
+
+    const novaInscricao = await Inscricao.create({
+      clienteId: cliente.id,
+      pedidoId: pedido.id,
+      status: 'PENDENTE'
+    });
+
+    res.status(201).send({ message: 'Inscrição realizada com sucesso!', inscricao: novaInscricao });
+
+  } catch (error) {
+    res.status(500).send({ message: 'Erro ao processar a inscrição.', error: error.message });
+  }
+};
+
+
 exports.create = async (req, res) => {
   try {
     const { numeroComanda, restauranteId } = req.body;
@@ -13,7 +46,7 @@ exports.create = async (req, res) => {
     const novoPedido = await Pedido.create({
       numeroComanda,
       restauranteId,
-      status: 'PREPARANDO',
+  status: 'PREPARANDO',
       dataHoraCriacao: new Date()
     });
 
@@ -23,16 +56,15 @@ exports.create = async (req, res) => {
   }
 };
 
-// Listar todos os pedidos (incluindo dados do restaurante)
 exports.findAll = async (req, res) => {
   try {
     const pedidos = await Pedido.findAll({
       include: [{
         model: Restaurante,
-        as: 'restaurante', 
-        attributes: ['id', 'nome'] 
+  as: 'restaurante',
+  attributes: ['id', 'nome']
       }],
-      order: [['dataHoraCriacao', 'DESC']] 
+  order: [['dataHoraCriacao', 'DESC']]
     });
     res.status(200).send(pedidos);
   } catch (error) {
@@ -40,14 +72,34 @@ exports.findAll = async (req, res) => {
   }
 };
 
-// Buscar um pedido por ID
+exports.findProntos = async (req, res) => {
+  try {
+    const pedidosProntos = await Pedido.findAll({
+      where: {
+        status: 'PRONTO'
+      },
+      include: [{
+        model: Restaurante,
+        as: 'restaurante',
+        attributes: ['id', 'nome']
+      }],
+  order: [['dataHoraPronto', 'DESC']],
+  limit: 7
+    });
+    res.status(200).send(pedidosProntos);
+  } catch (error) {
+    res.status(500).send({ message: 'Erro ao buscar pedidos prontos.', error: error.message });
+  }
+};
+
+
 exports.findOne = async (req, res) => {
   try {
     const id = req.params.id;
     const pedido = await Pedido.findByPk(id, {
       include: [{ 
         model: Restaurante, 
-        as: 'restaurante' 
+  as: 'restaurante'
       }]
     });
     if (pedido) {
@@ -60,11 +112,10 @@ exports.findOne = async (req, res) => {
   }
 };
 
-// Atualizar o status de um pedido (função principal do PinPad)
 exports.updateStatus = async (req, res) => {
   try {
     const id = req.params.id;
-    const { status } = req.body; 
+    const { status } = req.body;
 
     if (!status) {
         return res.status(400).send({ message: 'O novo status é obrigatório.' });
@@ -81,6 +132,25 @@ exports.updateStatus = async (req, res) => {
     });
 
     if (num == 1) {
+      if (status.toUpperCase() === 'PRONTO') {
+        const inscricoes = await Inscricao.findAll({
+          where: {
+            pedidoId: id,
+            status: 'PENDENTE'
+          },
+          include: [Cliente]
+        });
+
+        for (const inscricao of inscricoes) {
+          const emailCliente = inscricao.Cliente.email;
+          
+          console.log(`[NOTIFICAÇÃO]: Enviando e-mail para ${emailCliente} sobre o Pedido ID ${id} que está pronto!`);
+
+          await inscricao.update({ status: 'ENVIADA' });
+          await inscricao.update({ status: 'ENVIADA' });
+        }
+      }
+      
       res.send({ message: 'Status do pedido atualizado com sucesso.' });
     } else {
       res.send({ message: `Não foi possível atualizar o pedido com ID=${id}.` });
@@ -91,7 +161,6 @@ exports.updateStatus = async (req, res) => {
 };
 
 
-// Deletar um pedido por ID
 exports.delete = async (req, res) => {
   try {
     const id = req.params.id;
@@ -108,22 +177,3 @@ exports.delete = async (req, res) => {
   }
 };
 
-exports.findProntos = async (req, res) => {
-  try {
-    const pedidosProntos = await Pedido.findAll({
-      where: {
-        status: 'PRONTO'
-      },
-      include: [{
-        model: Restaurante,
-        as: 'restaurante',
-        attributes: ['id', 'nome']
-      }],
-      order: [['dataHoraPronto', 'DESC']],
-      limit: 7
-    });
-    res.status(200).send(pedidosProntos);
-  } catch (error) {
-    res.status(500).send({ message: 'Erro ao buscar pedidos prontos.', error: error.message });
-  }
-};
