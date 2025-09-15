@@ -108,3 +108,22 @@ exports.delete = async (req, res) => {
   }
 };
 
+exports.findProntos = async (req, res) => {
+  try {
+    const pedidosProntos = await Pedido.findAll({
+      where: {
+        status: 'PRONTO'
+      },
+      include: [{
+        model: Restaurante,
+        as: 'restaurante',
+        attributes: ['id', 'nome']
+      }],
+      order: [['dataHoraPronto', 'DESC']],
+      limit: 7
+    });
+    res.status(200).send(pedidosProntos);
+  } catch (error) {
+    res.status(500).send({ message: 'Erro ao buscar pedidos prontos.', error: error.message });
+  }
+};
