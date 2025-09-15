@@ -22,7 +22,6 @@ COPY --from=builder /app/src ./src
 COPY --from=builder /app/models ./models
 COPY --from=builder /app/migrations ./migrations
 COPY --from=builder /app/config ./config
-COPY --from=builder /app/.sequelizerc ./
 
 EXPOSE 3000
 
