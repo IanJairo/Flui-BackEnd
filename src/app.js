@@ -13,6 +13,7 @@ app.get('/', (req, res) => {
 
 const restauranteRoutes = require('./routes/restauranteRoutes.js');
 app.use('/api/restaurantes', restauranteRoutes);
+app.use('/api/pedidos', require('./routes/pedidoRoutes.js'));
 
 
 app.listen(port, async () => {
