@@ -7,6 +7,7 @@ router.get('/prontos', pedidoController.findProntos);
 router.get('/', pedidoController.findAll);
 router.get('/:id', pedidoController.findOne);
 router.patch('/:id/status', pedidoController.updateStatus);
+router.post('/:pedidoId/inscrever', pedidoController.inscrever);
 router.delete('/:id', pedidoController.delete);
 
 module.exports = router;
