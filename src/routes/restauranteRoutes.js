@@ -12,7 +12,6 @@ router.get('/:id/tempo-medio', restauranteController.getTempoMedio);
 router.put('/:id', [verifyToken], restauranteController.update);
 router.delete('/:id', [verifyToken], restauranteController.delete);
 
-router.post('/', restauranteController.create);
 
 
 module.exports = router;

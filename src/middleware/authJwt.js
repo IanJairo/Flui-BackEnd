@@ -8,14 +8,17 @@ const verifyToken = (req, res, next) => {
     return res.status(403).send({ message: 'Nenhum token fornecido!' });
   }
 
+  
+
   if (token.startsWith('Bearer ')) {
     token = token.slice(7, token.length);
   }
 
-  if (!config.jwtSecret) {
+  const secret = process.env.JWT_SECRET;
+  if (!secret) {
     return res.status(500).send({ message: 'JWT secret is not configured on the server.' });
   }
-  jwt.verify(token, config.jwtSecret, (err, decoded) => {
+  jwt.verify(token, secret, (err, decoded) => {
     if (err) {
       return res.status(401).send({ message: 'Não autorizado!' });
     }
