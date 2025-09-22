@@ -11,21 +11,37 @@ services:
     env_file:
       - .env 
     depends_on:
-      - db 
+      db:
+        condition: service_healthy
+    networks:
+      - swag_default
 
   db:
     image: postgres:15-alpine
     container_name: flui_db
     restart: always
     ports:
-      - "5432:5432"
+      - "5472:5472"
     environment:
       - POSTGRES_USER=${DB_USER} 
       - POSTGRES_PASSWORD=${DB_PASSWORD}
       - POSTGRES_DB=${DB_NAME}
+      - PGPORT=${DB_PORT}
     volumes:
       - postgres-data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      interval: 1m30s
+      timeout: 30s
+      retries: 5
+      start_period: 30s
+    networks:
+      - swag_default
+
+networks:
+  swag_default:
+    external: true
 
 volumes:
   postgres-data:
-    name: patio-postgres-data
+    name: flui-data
