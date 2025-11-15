@@ -1,8 +1,29 @@
 require('dotenv').config();
 const express = require('express');
+const cors = require('cors');  // ← 1. Importar cors
 const app = express();
 const port = process.env.PORT || 3000;
 const db = require('../models');
+
+const corsOptions = {
+  origin: function (origin, callback) {
+    const allowedOrigins = process.env.NODE_ENV === 'production'
+      ? ['https://flui.ianjairo.dev', 'https://flui.ianjairo.dev']
+      : '*';
+    
+    if (allowedOrigins === '*' || !origin || allowedOrigins.indexOf(origin) !== -1) {
+      callback(null, true);
+    } else {
+      callback(new Error('Not allowed by CORS'));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'PATCH', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
+  optionsSuccessStatus: 200
+};
+
+app.use(cors(corsOptions));  
 
 app.use(express.json()); 
 app.use(express.urlencoded({ extended: true }));
@@ -14,7 +35,7 @@ const isDevelopment = process.env.NODE_ENV === 'development' || !process.env.NOD
 if (!isProduction) {
   const swaggerUi = require('swagger-ui-express');
   const basicAuth = require('express-basic-auth');
-  const setupSwagger = require('./../swagger');
+  const setupSwagger = require('./swagger');
 
   const swaggerSpec = setupSwagger(port, process.env.NODE_ENV);
 
