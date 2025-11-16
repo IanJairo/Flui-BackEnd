@@ -4,13 +4,17 @@ replicaCount: 1
 image:
   repository: ghcr.io/ianjairo/flui-backend
   tag: "dev-cf2f545"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ghcr-secret
 
 env:
   NODE_ENV: development
   PORT: "3000"
 
 database:
-  host: flui-db
+  host: postgres-postgresql
   port: 5432
   name: flui_dev
   user: postgres
