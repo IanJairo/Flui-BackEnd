@@ -25,7 +25,7 @@ jobs:
   build-and-push:
     runs-on: ubuntu-latest
     permissions:
-      contents: write
+      contents: read
       packages: write
     if: github.actor != 'github-actions[bot]'
     
@@ -101,7 +101,7 @@ jobs:
           TAG="${{ steps.env.outputs.tag }}"
           VALUES_FILE="${{ steps.env.outputs.values_file }}"
           sed -i "s|tag: \".*\"|tag: \"${TAG}\"|g" ${VALUES_FILE}
-          
+
       - name: Commit and push Helm values
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
