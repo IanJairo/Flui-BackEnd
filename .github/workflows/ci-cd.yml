@@ -52,11 +52,11 @@ jobs:
           
           if [[ "$BRANCH_NAME" == "main" ]]; then
             echo "environment=prod" >> $GITHUB_OUTPUT
-            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "tag=prod-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
             echo "values_file=helm/values-prod.yaml" >> $GITHUB_OUTPUT
           elif [[ "$BRANCH_NAME" == "dev" ]]; then
             echo "environment=dev" >> $GITHUB_OUTPUT
-            echo "tag=dev-latest" >> $GITHUB_OUTPUT
+            echo "tag=dev-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
             echo "values_file=helm/values-dev.yaml" >> $GITHUB_OUTPUT
           else
             SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g')
@@ -66,6 +66,7 @@ jobs:
           fi
           
           echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
 
       - name: Extract metadata
         id: meta
