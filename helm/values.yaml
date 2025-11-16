@@ -4,7 +4,7 @@ replicaCount: 1
 image:
   repository: ghcr.io/ianjairo/flui-backend
   pullPolicy: IfNotPresent
-  tag: ""  # Será injetado pelo CI/CD
+  tag: ""
 
 imagePullSecrets: []
 nameOverride: ""
@@ -92,15 +92,18 @@ env:
   NODE_ENV: production
   PORT: "3000"
 
+# Configuração do Swagger
+swagger:
+  user: "admin"
+  password: "SenhaForteDocs@2025!"
+
 # Configuração do Banco de Dados
 database:
   host: postgres-postgresql
   port: 5432
   name: flui_db
   user: postgres
-  # Opção 1: Usar secret existente do Kubernetes
   existingSecret: ""
-  # Opção 2: Criar secret via Helm (NÃO recomendado para produção)
   password: ""
 
 # Job de Migrations do Sequelize
