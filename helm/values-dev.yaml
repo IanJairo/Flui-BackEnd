@@ -3,7 +3,7 @@ replicaCount: 1
 
 image:
   repository: ghcr.io/ianjairo/flui-backend
-  tag: "dev-cf2f545"
+  tag: "dev-fed3b7b"
 
 env:
   NODE_ENV: development
