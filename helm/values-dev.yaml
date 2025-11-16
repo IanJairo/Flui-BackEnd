@@ -19,10 +19,10 @@ swagger:
   password: "SenhaForteDocs@2025!"
   
 database:
-  host: postgres-postgresql
+  host: postgres-cluster-rw
   port: 5432
   name: flui_dev
-  user: postgres
+  user: flui
   existingSecret: "flui-db-secret"
 
 resources:
