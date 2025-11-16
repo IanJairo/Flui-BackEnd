@@ -13,3 +13,5 @@ data:
   DB_NAME: {{ .Values.database.name | quote }}
   DB_USER: {{ .Values.database.user | quote }}
   DB_DIALECT: "postgres"
+  SWAGGER_USER: {{ .Values.swagger.user | default "admin" | quote }}
+  SWAGGER_PASSWORD: {{ .Values.swagger.password | default "admin123" | quote }}

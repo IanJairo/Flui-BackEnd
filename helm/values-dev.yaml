@@ -9,10 +9,15 @@ image:
 imagePullSecrets:
   - name: ghcr-secret
 
+
 env:
   NODE_ENV: development
   PORT: "3000"
 
+swagger:
+  user: admin
+  password: "SenhaForteDocs@2025!"
+  
 database:
   host: postgres-postgresql
   port: 5432
