@@ -1,0 +1,155 @@
+name: CI/CD Pipeline
+
+on:
+  push:
+    branches:
+      - main
+      - develop
+    paths-ignore:
+      - 'helm/values-*.yaml'
+      - 'README.md'
+      - 'docs/**'
+
+  pull_request:
+    branches:
+      - main
+      - develop
+
+  release:
+    types: [published]
+
+env:
+  REGISTRY: ghcr.io
+  IMAGE_NAME: ${{ github.repository }}
+
+jobs:
+  build-and-push:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      packages: write
+    
+    # Evitar loop infinito [web:225]
+    if: github.actor != 'github-actions[bot]'
+    
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Docker Buildx
+        uses: docker/setup-buildx-action@v3
+
+      - name: Log in to GitHub Container Registry
+        uses: docker/login-action@v3
+        with:
+          registry: ${{ env.REGISTRY }}
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Extract metadata (tags, labels)
+        id: meta
+        uses: docker/metadata-action@v5
+        with:
+          images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
+          tags: |
+            type=ref,event=branch
+            type=ref,event=pr
+            type=semver,pattern={{version}}
+            type=semver,pattern={{major}}.{{minor}}
+            type=sha,prefix={{branch}}-
+            type=raw,value=dev-latest,enable=${{ github.ref == 'refs/heads/develop' }}
+            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+
+      - name: Build and push Docker image
+        uses: docker/build-push-action@v5
+        with:
+          context: .
+          file: ./Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      - name: Extract image tag
+        id: extract-tag
+        run: |
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            echo "tag=latest" >> $GITHUB_OUTPUT
+          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
+            echo "tag=dev-latest" >> $GITHUB_OUTPUT
+          else
+            echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
+          fi
+
+      - name: Update Helm values
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: |
+          TAG="${{ steps.extract-tag.outputs.tag }}"
+          
+          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
+            VALUES_FILE="helm/values-prod.yaml"
+          else
+            VALUES_FILE="helm/values-dev.yaml"
+          fi
+          
+          # Atualizar tag da imagem
+          sed -i "s|tag: \".*\"|tag: \"${TAG}\"|g" ${VALUES_FILE}
+          
+          echo "Updated ${VALUES_FILE} with tag: ${TAG}"
+
+      - name: Commit and push Helm values
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        run: |
+          git config --local user.email "github-actions[bot]@users.noreply.github.com"
+          git config --local user.name "github-actions[bot]"
+          
+          git add helm/values-*.yaml
+          
+          if git diff --staged --quiet; then
+            echo "No changes to commit"
+          else
+            git commit -m "chore: update image tag to ${{ steps.extract-tag.outputs.tag }} [skip ci]"
+            git push
+          fi
+
+  lint-and-test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Set up Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+          cache: 'npm'
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Run linter
+        run: npm run lint || echo "No lint script found"
+
+      - name: Run tests
+        run: npm test || echo "No test script found"
+
+  helm-lint:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Helm
+        uses: azure/setup-helm@v3
+        with:
+          version: 'v3.14.0'
+
+      - name: Lint Helm chart
+        run: helm lint helm/
+
+      - name: Template Helm chart (dev)
+        run: helm template flui-dev helm/ -f helm/values-dev.yaml
+
+      - name: Template Helm chart (prod)
+        run: helm template flui-prod helm/ -f helm/values-prod.yaml

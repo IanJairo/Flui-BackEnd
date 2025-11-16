@@ -1,0 +1,23 @@
+apiVersion: v2
+name: flui-backend
+description: API do Pátio de Comidas - Backend Node.js com Express e PostgreSQL
+type: application
+version: 1.0.0
+appVersion: "1.0.0"
+
+keywords:
+  - nodejs
+  - express
+  - postgresql
+  - sequelize
+  - api
+
+maintainers:
+  - name: Ian Juliano
+    email: ian@flui.com
+
+home: https://github.com/ianjairo/flui-backend
+sources:
+  - https://github.com/ianjairo/flui-backend
+
+icon: https://nodejs.org/static/images/logo.svg

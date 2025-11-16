@@ -1,0 +1,39 @@
+# Valores específicos para ambiente de DESENVOLVIMENTO
+replicaCount: 1
+
+image:
+  repository: ghcr.io/ianjairo/flui-backend
+  tag: "dev-latest"
+
+env:
+  NODE_ENV: development
+  PORT: "3000"
+
+database:
+  host: flui-db
+  port: 5432
+  name: flui_dev
+  user: postgres
+  existingSecret: "flui-db-secret"
+
+resources:
+  limits:
+    cpu: 300m
+    memory: 256Mi
+  requests:
+    cpu: 100m
+    memory: 128Mi
+
+autoscaling:
+  enabled: false
+
+ingress:
+  enabled: true
+  hosts:
+    - host: api-dev.flui.local
+      paths:
+        - path: /
+          pathType: Prefix
+
+migration:
+  enabled: true

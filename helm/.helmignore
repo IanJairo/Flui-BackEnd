@@ -1,0 +1,16 @@
+# Arquivos ignorados pelo Helm
+*.swp
+*.bak
+*.tmp
+.DS_Store
+.git/
+.gitignore
+.bzr/
+.bzrignore
+.hg/
+.hgignore
+.svn/
+*.orig
+.idea/
+*.iml
+.vscode/
