@@ -4,17 +4,16 @@ on:
   push:
     branches:
       - main
-      - develop
+      - dev
+      - 'etapa*'
     paths-ignore:
       - 'helm/values-*.yaml'
       - 'README.md'
       - 'docs/**'
-
   pull_request:
     branches:
       - main
-      - develop
-
+      - dev
   release:
     types: [published]
 
@@ -28,13 +27,13 @@ jobs:
     permissions:
       contents: read
       packages: write
-    
-    # Evitar loop infinito [web:225]
     if: github.actor != 'github-actions[bot]'
     
     steps:
       - name: Checkout repository
         uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
 
       - name: Set up Docker Buildx
         uses: docker/setup-buildx-action@v3
@@ -46,7 +45,29 @@ jobs:
           username: ${{ github.actor }}
           password: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Extract metadata (tags, labels)
+      - name: Determine environment and tag
+        id: env
+        run: |
+          BRANCH_NAME="${GITHUB_REF#refs/heads/}"
+          
+          if [[ "$BRANCH_NAME" == "main" ]]; then
+            echo "environment=prod" >> $GITHUB_OUTPUT
+            echo "tag=latest" >> $GITHUB_OUTPUT
+            echo "values_file=helm/values-prod.yaml" >> $GITHUB_OUTPUT
+          elif [[ "$BRANCH_NAME" == "dev" ]]; then
+            echo "environment=dev" >> $GITHUB_OUTPUT
+            echo "tag=dev-latest" >> $GITHUB_OUTPUT
+            echo "values_file=helm/values-dev.yaml" >> $GITHUB_OUTPUT
+          else
+            SAFE_BRANCH=$(echo "$BRANCH_NAME" | sed 's/[^a-zA-Z0-9]/-/g')
+            echo "environment=staging" >> $GITHUB_OUTPUT
+            echo "tag=${SAFE_BRANCH}-${GITHUB_SHA::7}" >> $GITHUB_OUTPUT
+            echo "values_file=helm/values-dev.yaml" >> $GITHUB_OUTPUT
+          fi
+          
+          echo "branch=$BRANCH_NAME" >> $GITHUB_OUTPUT
+
+      - name: Extract metadata
         id: meta
         uses: docker/metadata-action@v5
         with:
@@ -57,8 +78,7 @@ jobs:
             type=semver,pattern={{version}}
             type=semver,pattern={{major}}.{{minor}}
             type=sha,prefix={{branch}}-
-            type=raw,value=dev-latest,enable=${{ github.ref == 'refs/heads/develop' }}
-            type=raw,value=latest,enable=${{ github.ref == 'refs/heads/main' }}
+            type=raw,value=${{ steps.env.outputs.tag }}
 
       - name: Build and push Docker image
         uses: docker/build-push-action@v5
@@ -70,46 +90,27 @@ jobs:
           labels: ${{ steps.meta.outputs.labels }}
           cache-from: type=gha
           cache-to: type=gha,mode=max
-
-      - name: Extract image tag
-        id: extract-tag
-        run: |
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            echo "tag=latest" >> $GITHUB_OUTPUT
-          elif [[ "${{ github.ref }}" == "refs/heads/develop" ]]; then
-            echo "tag=dev-latest" >> $GITHUB_OUTPUT
-          else
-            echo "tag=${{ github.sha }}" >> $GITHUB_OUTPUT
-          fi
+          build-args: |
+            NODE_ENV=${{ steps.env.outputs.environment }}
 
       - name: Update Helm values
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
         run: |
-          TAG="${{ steps.extract-tag.outputs.tag }}"
-          
-          if [[ "${{ github.ref }}" == "refs/heads/main" ]]; then
-            VALUES_FILE="helm/values-prod.yaml"
-          else
-            VALUES_FILE="helm/values-dev.yaml"
-          fi
-          
-          # Atualizar tag da imagem
+          TAG="${{ steps.env.outputs.tag }}"
+          VALUES_FILE="${{ steps.env.outputs.values_file }}"
           sed -i "s|tag: \".*\"|tag: \"${TAG}\"|g" ${VALUES_FILE}
-          
-          echo "Updated ${VALUES_FILE} with tag: ${TAG}"
 
       - name: Commit and push Helm values
-        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/develop'
+        if: github.ref == 'refs/heads/main' || github.ref == 'refs/heads/dev'
         run: |
           git config --local user.email "github-actions[bot]@users.noreply.github.com"
           git config --local user.name "github-actions[bot]"
-          
           git add helm/values-*.yaml
           
           if git diff --staged --quiet; then
             echo "No changes to commit"
           else
-            git commit -m "chore: update image tag to ${{ steps.extract-tag.outputs.tag }} [skip ci]"
+            git commit -m "chore: update image tag to ${{ steps.env.outputs.tag }} [skip ci]"
             git push
           fi
 
@@ -129,10 +130,20 @@ jobs:
         run: npm ci
 
       - name: Run linter
-        run: npm run lint || echo "No lint script found"
+        run: |
+          if npm run | grep -q "lint"; then
+            npm run lint
+          else
+            echo "No lint script found, skipping"
+          fi
 
       - name: Run tests
-        run: npm test || echo "No test script found"
+        run: |
+          if npm run | grep -q "test"; then
+            npm test
+          else
+            echo "No test script found, skipping"
+          fi
 
   helm-lint:
     runs-on: ubuntu-latest
@@ -148,8 +159,19 @@ jobs:
       - name: Lint Helm chart
         run: helm lint helm/
 
-      - name: Template Helm chart (dev)
-        run: helm template flui-dev helm/ -f helm/values-dev.yaml
+      - name: Template Helm chart dev
+        run: helm template flui-dev helm/ -f helm/values-dev.yaml > /dev/null
 
-      - name: Template Helm chart (prod)
-        run: helm template flui-prod helm/ -f helm/values-prod.yaml
+      - name: Template Helm chart prod
+        run: helm template flui-prod helm/ -f helm/values-prod.yaml > /dev/null
+
+  test-deployment:
+    runs-on: ubuntu-latest
+    if: github.ref != 'refs/heads/main' && github.ref != 'refs/heads/dev'
+    needs: [build-and-push, helm-lint]
+    steps:
+      - name: Deployment summary
+        run: |
+          echo "Branch: ${GITHUB_REF#refs/heads/}"
+          echo "Image: ghcr.io/${{ github.repository }}"
+          echo "Tag: ${GITHUB_REF#refs/heads/}-${GITHUB_SHA::7}"
