@@ -3,11 +3,19 @@ replicaCount: 3
 
 image:
   repository: ghcr.io/ianjairo/flui-backend
-  tag: "prod-aa52f0f"  # Será injetado pelo CI/CD
+  tag: "prod-aa52f0f"
+  pullPolicy: IfNotPresent
+
+imagePullSecrets:
+  - name: ghcr-secret
 
 env:
   NODE_ENV: production
   PORT: "3000"
+
+swagger:
+  user: admin
+  password: "SenhaProdForte@2025!"
 
 database:
   host: postgres-cluster-prod-rw
