@@ -11,6 +11,12 @@ data:
   DB_HOST: {{ .Values.database.host | quote }}
   DB_PORT: {{ .Values.database.port | quote }}
   DB_NAME: {{ .Values.database.name | quote }}
+  {{- if eq .Values.env.NODE_ENV "production" }}
+  DB_NAME_PROD: {{ .Values.database.name | quote }}
+  {{- end }}
+  {{- if eq .Values.env.NODE_ENV "development" }}
+  DB_NAME_DEV: {{ .Values.database.name | quote }}
+  {{- end }}
   DB_USER: {{ .Values.database.user | quote }}
   DB_DIALECT: "postgres"
   SWAGGER_USER: {{ .Values.swagger.user | default "admin" | quote }}
