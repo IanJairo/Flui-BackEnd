@@ -10,10 +10,10 @@ env:
   PORT: "3000"
 
 database:
-  host: postgres-postgresql-primary
+  host: postgres-cluster-prod-rw
   port: 5432
   name: flui_prod
-  user: postgres
+  user: flui
   existingSecret: "flui-db-prod-secret"
 
 resources:
