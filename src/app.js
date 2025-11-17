@@ -90,9 +90,10 @@ if (!isProduction) {
 
 app.get('/', (req, res) => {
   res.json({ 
-    message: 'API do Pátio de Comidas funcionando!',
+    message: 'HelloWorld!',
     version: '1.0.0',
-    environment: process.env.NODE_ENV || 'development'
+    environment: process.env.NODE_ENV || 'development',
+    docs: !isProduction ? '/api-docs' : undefined
   });
 });
 
