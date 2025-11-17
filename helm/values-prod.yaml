@@ -3,7 +3,7 @@ replicaCount: 3
 
 image:
   repository: ghcr.io/ianjairo/flui-backend
-  tag: ""  # Será injetado pelo CI/CD
+  tag: "prod-aa52f0f"  # Será injetado pelo CI/CD
 
 env:
   NODE_ENV: production
