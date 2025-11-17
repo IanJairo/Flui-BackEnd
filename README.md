@@ -28,20 +28,36 @@ cd <NOME_DA_PASTA_DO_PROJETO>
 
 **2. Configure as Variáveis de Ambiente** 
 
-Crie um arquivo chamado .env na raiz do projeto, copiando o conteúdo do arquivo .env.example (se você tiver um) ou usando a estrutura abaixo. Este arquivo guardará as credenciais e configurações sensíveis.
+Crie um arquivo chamado .env na raiz do projeto, copiando o conteúdo do arquivo .env.example:
+```
+cp .env.example .env
+```
+
+Edite o arquivo .env com seus valores:
 ```
 # Configurações do Banco de Dados
 DB_HOST=db
-DB_USER=
-DB_PASSWORD=
+DB_USER=seu_usuario
+DB_PASSWORD=sua_senha_segura
 DB_NAME=flui_db
+DB_PORT=5472
 DB_DIALECT=postgres
 
 # Chave secreta para assinatura do JWT
-JWT_SECRET=
+JWT_SECRET=sua_chave_secreta_muito_segura_aqui
+
+# Configurações do Swagger (para desenvolvimento)
+SWAGGER_USER=admin
+SWAGGER_PASSWORD=senha_swagger
+
+# Ambiente de execução
+NODE_ENV=development
 ```
 
-Atenção: Os valores acima devem ser os mesmos utilizados no seu docker-compose.yml.
+**Atenção:** 
+- Os valores de `DB_USER`, `DB_PASSWORD` e `DB_NAME` devem ser os mesmos utilizados no seu docker-compose.yml.
+- O `DB_PORT` deve corresponder à porta interna do PostgreSQL (5472 neste projeto).
+- Gere uma chave `JWT_SECRET` forte e única para seu ambiente.
 
 **3. Suba os Contêineres com Docker Compose**
 
