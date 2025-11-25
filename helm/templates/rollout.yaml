@@ -1,6 +1,6 @@
-{{- if not .Values.rollout.enabled }}
-apiVersion: apps/v1
-kind: Deployment
+{{- if .Values.rollout.enabled }}
+apiVersion: argoproj.io/v1alpha1
+kind: Rollout
 metadata:
   name: {{ include "flui-backend.fullname" . }}
   labels:
@@ -11,11 +11,7 @@ spec:
   {{- if not .Values.autoscaling.enabled }}
   replicas: {{ .Values.replicaCount }}
   {{- end }}
-  strategy:
-    type: RollingUpdate
-    rollingUpdate:
-      maxSurge: 1
-      maxUnavailable: 0
+  revisionHistoryLimit: 3
   selector:
     matchLabels:
       {{- include "flui-backend.selectorLabels" . | nindent 6 }}
@@ -70,4 +66,36 @@ spec:
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
+  strategy:
+    {{- if eq .Values.rollout.strategy "blueGreen" }}
+    blueGreen:
+      activeService: {{ include "flui-backend.fullname" . }}-active
+      previewService: {{ include "flui-backend.fullname" . }}-preview
+      autoPromotionEnabled: {{ .Values.rollout.blueGreen.autoPromotionEnabled }}
+      {{- if not .Values.rollout.blueGreen.autoPromotionEnabled }}
+      autoPromotionSeconds: 0
+      {{- end }}
+      scaleDownDelaySeconds: {{ .Values.rollout.blueGreen.scaleDownDelaySeconds }}
+      previewReplicaCount: {{ .Values.rollout.blueGreen.previewReplicaCount }}
+    {{- else if eq .Values.rollout.strategy "canary" }}
+    canary:
+      maxSurge: {{ .Values.rollout.canary.maxSurge }}
+      maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
+      steps:
+      {{- range .Values.rollout.canary.steps }}
+      - setWeight: {{ .setWeight }}
+      {{- if .pause }}
+      - pause:
+          {{- if .pause.duration }}
+          duration: {{ .pause.duration }}
+          {{- end }}
+      {{- end }}
+      {{- end }}
+      {{- if .Values.rollout.canary.analysis.enabled }}
+      analysis:
+        templates:
+        - templateName: {{ include "flui-backend.fullname" . }}-analysis
+        startingStep: {{ .Values.rollout.canary.analysis.startingStep }}
+      {{- end }}
+    {{- end }}
 {{- end }}
