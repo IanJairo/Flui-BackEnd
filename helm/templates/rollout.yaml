@@ -83,12 +83,11 @@ spec:
       maxUnavailable: {{ .Values.rollout.canary.maxUnavailable }}
       steps:
       {{- range .Values.rollout.canary.steps }}
+      {{- if .setWeight }}
       - setWeight: {{ .setWeight }}
-      {{- if .pause }}
+      {{- else if .pause }}
       - pause:
-          {{- if .pause.duration }}
           duration: {{ .pause.duration }}
-          {{- end }}
       {{- end }}
       {{- end }}
       {{- if .Values.rollout.canary.analysis.enabled }}
