@@ -135,13 +135,17 @@ rollout:
     maxUnavailable: 0
     steps:
       - setWeight: 20
-      - pause: { duration: 30s }
+      - pause:
+          duration: 30s
       - setWeight: 40
-      - pause: { duration: 30s }
+      - pause:
+          duration: 30s
       - setWeight: 60
-      - pause: { duration: 30s }
+      - pause:
+          duration: 30s
       - setWeight: 80
-      - pause: { duration: 30s }
+      - pause:
+          duration: 30s
     analysis:
       enabled: false
       startingStep: 1
