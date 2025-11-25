@@ -46,3 +46,12 @@ ingress:
 
 migration:
   enabled: false
+
+rollout:
+  enabled: true
+  strategy: blueGreen
+  blueGreen:
+    autoPromotionEnabled: false
+    scaleDownDelaySeconds: 30
+    previewReplicaCount: 1
+
