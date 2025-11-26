@@ -3,7 +3,7 @@ replicaCount: 3
 
 image:
   repository: ghcr.io/ianjairo/flui-backend
-  tag: "prod-1361189"
+  tag: "prod-f5ff94f"
   pullPolicy: IfNotPresent
 
 imagePullSecrets:
