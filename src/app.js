@@ -104,7 +104,7 @@ app.use('/api/auth', require('./routes/authRoutes.js'));
 
 app.listen(port, async () => {
   console.log('='.repeat(60));
-  console.log('Hola mundo - ARGO ROLLOUTS');
+  console.log('🚀 CANARY DEPLOYMENT - VERSION 4.0 - PROD');
   console.log('='.repeat(60));
   console.log(`Servidor rodando na porta ${port}`);
   console.log(`Ambiente: ${process.env.NODE_ENV || 'development'}`);
